@@ -3,768 +3,741 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>工廠生產管理 To-Do List 追蹤系統</title>
+    <title>我的待辦追蹤</title>
     <style>
         :root {
-            --bg-color: #f1f5f9;
-            --card-bg: #ffffff;
-            --text-main: #0f172a;
-            --text-sub: #475569;
-            --primary: #0284c7;
-            --primary-hover: #0369a1;
-            --danger: #dc2626;
-            --danger-bg: #fef2f2;
-            --warning: #d97706;
-            --success: #16a34a;
-            --border-color: #cbd5e1;
-            --radius: 12px;
+            --bg: #fafaf9; --card: #ffffff; --text: #1c1917; --sub: #78716c;
+            --pri: #2563eb; --pri-h: #1d4ed8; --danger: #dc2626; --danger-bg: #fef2f2;
+            --warn: #d97706; --ok: #16a34a; --border: #e7e5e4; --r: 14px;
+            --header-bg: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            --input-bg: #f5f5f4; --accent: #7c3aed;
         }
+        [data-theme="dark"] {
+            --bg: #0c0a09; --card: #1c1917; --text: #e7e5e4; --sub: #a8a29e;
+            --border: #292524; --header-bg: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --input-bg: #171412; --danger-bg: #2d1215;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: var(--bg); color: var(--text); padding: 12px; max-width: 960px; margin: 0 auto;
+               transition: background .3s, color .3s; -webkit-tap-highlight-color: transparent; }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
+        header { background: var(--header-bg); color: #fff; padding: 18px; border-radius: var(--r);
+                 margin-bottom: 14px; }
+        .h-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .h-title { font-size: 1.3rem; font-weight: 700; }
+        .h-date { font-size: .78rem; color: #94a3b8; }
+        .h-right { display: flex; gap: 8px; align-items: center; }
+        .btn-i { background: rgba(255,255,255,.12); border: none; color: #cbd5e1; width: 34px; height: 34px;
+                 border-radius: 8px; cursor: pointer; font-size: 1.05rem; display: grid; place-items: center; }
+        .btn-i:active { background: rgba(255,255,255,.25); }
+        .sg { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; text-align: center; }
+        .sc { background: rgba(255,255,255,.08); padding: 8px 4px; border-radius: 10px; }
+        .sc .n { font-size: 1.35rem; font-weight: 700; }
+        .sc .l { font-size: .68rem; color: #94a3b8; margin-top: 2px; }
+        .sc.dng .n { color: #f87171; }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            padding: 12px;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
+        .tabs { display: flex; gap: 3px; margin-bottom: 14px; background: var(--card); border-radius: var(--r);
+                padding: 4px; border: 1px solid var(--border); }
+        .tab { flex: 1; padding: 10px 6px; border: none; background: 0; border-radius: 10px;
+               font-size: .84rem; font-weight: 600; cursor: pointer; color: var(--sub); transition: all .15s; }
+        .tab.on { background: var(--pri); color: #fff; }
+        .tc { display: none; } .tc.on { display: block; }
 
-        /* 頂部儀表板 */
-        header {
-            background: #1e293b;
-            color: white;
-            padding: 16px;
-            border-radius: var(--radius);
-            margin-bottom: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
+        .wrap { display: grid; grid-template-columns: 1fr; gap: 14px; }
+        @media(min-width:768px){ .wrap { grid-template-columns: 380px 1fr; } }
+        .pnl { background: var(--card); padding: 16px; border-radius: var(--r);
+               border: 1px solid var(--border); }
+        .pnl h2 { font-size: 1rem; margin-bottom: 12px; padding-bottom: 8px;
+                   border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 6px; }
 
-        header h1 {
-            font-size: 1.3rem;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+        .fg { margin-bottom: 12px; }
+        .fg > label { display: block; font-size: .8rem; font-weight: 600; margin-bottom: 5px; color: var(--sub); }
+        input[type="text"],input[type="date"],select,textarea {
+            width: 100%; padding: 11px; border: 1px solid var(--border); border-radius: 10px;
+            font-size: .95rem; outline: 0; background: var(--input-bg); color: var(--text); }
+        input:focus,select:focus,textarea:focus { border-color: var(--pri); background: var(--card); }
+        .fr2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-            text-align: center;
-        }
+        /* Chips */
+        .cg { display: flex; flex-wrap: wrap; gap: 6px; }
+        .ch { padding: 7px 13px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--card);
+              font-size: .8rem; cursor: pointer; color: var(--sub); transition: all .12s; white-space: nowrap;
+              user-select: none; -webkit-user-select: none; }
+        .ch:active { transform: scale(.95); }
+        .ch.on { color: #fff; border-color: transparent; }
+        /* Category colors */
+        .ch[data-c="work"].on { background: #2563eb; }
+        .ch[data-c="personal"].on { background: #7c3aed; }
+        .ch[data-c="home"].on { background: #d97706; }
+        .ch[data-c="health"].on { background: #16a34a; }
+        .ch[data-c="finance"].on { background: #0891b2; }
+        .ch[data-c="learn"].on { background: #db2777; }
+        .ch[data-c="social"].on { background: #ea580c; }
+        .ch[data-c="other"].on { background: #64748b; }
+        .ch[data-c="blue"].on { background: var(--pri); }
+        .ch[data-c="purple"].on { background: var(--accent); }
+        .ph.on { background: var(--danger); color: #fff; border-color: var(--danger); }
+        .pm.on { background: var(--warn); color: #fff; border-color: var(--warn); }
+        .pl.on { background: var(--ok); color: #fff; border-color: var(--ok); }
 
-        .stat-card {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px 4px;
-            border-radius: 8px;
-        }
+        /* Media */
+        .ma { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .bm { display: flex; flex-direction: column; align-items: center; justify-content: center;
+              padding: 12px 6px; background: var(--bg); border: 2px dashed var(--border);
+              border-radius: 10px; cursor: pointer; font-size: .82rem; font-weight: 600; color: var(--text); }
+        .bm:active { transform: scale(.97); }
+        .bm.rec { background: #fee2e2; border-color: var(--danger); color: var(--danger); animation: pu 1.5s infinite; }
+        @keyframes pu { 0%{opacity:1} 50%{opacity:.5} 100%{opacity:1} }
+        .pv { margin-top: 6px; font-size: .75rem; color: var(--sub); }
+        .pv img { max-width: 100%; max-height: 90px; border-radius: 6px; margin-top: 4px; }
+        .bsub { width: 100%; padding: 14px; background: var(--pri); color: #fff; border: none;
+                border-radius: 10px; font-size: .95rem; font-weight: 700; cursor: pointer; }
+        .bsub:active { background: var(--pri-h); }
 
-        .stat-card .num {
-            font-size: 1.4rem;
-            font-weight: bold;
-        }
+        /* Search */
+        .sb { position: relative; margin-bottom: 8px; }
+        .sb input { padding-left: 36px; }
+        .sb::before { content: '🔍'; position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: .85rem; }
 
-        .stat-card .label {
-            font-size: 0.75rem;
-            color: #94a3b8;
-        }
+        /* Filters & Sort */
+        .fb { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 6px;
+              scrollbar-width: none; -ms-overflow-style: none; }
+        .fb::-webkit-scrollbar { display: none; }
+        .fbtn { padding: 5px 10px; border-radius: 18px; border: 1px solid var(--border);
+                background: var(--card); font-size: .73rem; white-space: nowrap; cursor: pointer; color: var(--text); }
+        .fbtn.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+        .sr { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; font-size: .75rem; color: var(--sub); }
+        .sr select { width: auto; padding: 4px 8px; font-size: .75rem; border-radius: 8px; }
 
-        .stat-card.danger-stat .num {
-            color: #ef4444;
-        }
+        /* Task Cards */
+        .tl { display: flex; flex-direction: column; gap: 10px; }
+        .tk { background: var(--card); border: 1px solid var(--border); border-left: 5px solid var(--pri);
+              border-radius: 10px; padding: 12px; cursor: pointer; transition: box-shadow .12s; }
+        .tk:active { box-shadow: 0 0 0 2px var(--pri); }
+        .tk.dng { border-left-color: var(--danger); background: var(--danger-bg); border-color: #fca5a5; }
+        .tk.done { opacity: .45; border-left-color: var(--ok); }
+        .tk.bh { border-left-color: var(--danger); }
+        .tk.bm2 { border-left-color: var(--warn); }
+        .tk.bl { border-left-color: var(--ok); }
+        .bd { display: inline-flex; font-size: .63rem; font-weight: 700; padding: 2px 7px;
+              border-radius: 4px; margin-bottom: 3px; margin-right: 3px; color: #fff; }
+        .bd-d { background: var(--danger); } .bd-rp { background: var(--accent); }
+        .bd-ph { background: var(--danger); } .bd-pm { background: var(--warn); }
+        .bd-cat { background: #475569; font-weight: 600; }
+        .tt { font-size: .93rem; font-weight: 700; margin-bottom: 3px; }
+        .tm { font-size: .7rem; color: var(--sub); display: flex; gap: 8px; flex-wrap: wrap; }
+        .tth { display: flex; gap: 4px; margin-top: 5px; }
+        .tth img { width: 36px; height: 36px; object-fit: cover; border-radius: 4px; }
+        .tar { display: flex; justify-content: space-between; align-items: center; margin-top: 8px;
+               padding-top: 6px; border-top: 1px dashed var(--border); gap: 6px; }
+        .ssel { padding: 4px 8px; font-size: .75rem; width: auto; background: var(--input-bg);
+                color: var(--text); border: 1px solid var(--border); border-radius: 6px; }
+        .bdel { background: 0; border: none; color: #a8a29e; font-size: .75rem; cursor: pointer; padding: 4px 8px; }
+        .bdel:hover { color: var(--danger); }
 
-        /* 主容器布局 */
-        .container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 16px;
-        }
+        /* Batch */
+        .bb { display: none; align-items: center; gap: 8px; margin-bottom: 8px; padding: 8px 12px;
+              background: var(--pri); color: #fff; border-radius: 10px; font-size: .82rem; }
+        .bb.show { display: flex; }
+        .bb button { background: rgba(255,255,255,.2); color: #fff; border: none; padding: 5px 10px;
+                     border-radius: 6px; font-size: .78rem; cursor: pointer; font-weight: 600; }
+        .bch { position: absolute; top: 10px; right: 10px; width: 20px; height: 20px;
+               accent-color: var(--pri); display: none; }
+        .bmode .bch { display: block; }
+        .bmode .tk { position: relative; padding-right: 36px; }
 
-        @media (min-width: 768px) {
-            .container {
-                grid-template-columns: 380px 1fr;
-            }
-        }
+        /* Detail Modal */
+        .ov { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+              background: rgba(0,0,0,.5); z-index: 900; justify-content: center; align-items: flex-start;
+              overflow-y: auto; padding: 24px 12px; backdrop-filter: blur(4px); }
+        .ov.open { display: flex; }
+        .dm { background: var(--card); border-radius: var(--r); width: 100%; max-width: 520px;
+              margin: auto; padding: 20px; position: relative; }
+        .dm h3 { font-size: 1.1rem; margin-bottom: 14px; padding-right: 30px; }
+        .mc { position: absolute; top: 12px; right: 14px; background: 0; border: none;
+              font-size: 1.4rem; cursor: pointer; color: var(--sub); }
+        .dr { margin-bottom: 12px; }
+        .dl2 { font-size: .75rem; font-weight: 600; color: var(--sub); margin-bottom: 4px; }
+        .pg { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+        .pg img { width: 76px; height: 76px; object-fit: cover; border-radius: 8px; cursor: pointer; }
+        .pg .apb { width: 76px; height: 76px; border: 2px dashed var(--border); border-radius: 8px;
+                   display: flex; align-items: center; justify-content: center;
+                   font-size: 1.6rem; color: var(--sub); cursor: pointer; background: var(--bg); }
+        .da { display: flex; gap: 8px; margin-top: 16px; }
+        .da button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: .88rem;
+                     font-weight: 600; cursor: pointer; }
+        .bsv { background: var(--pri); color: #fff; }
+        .bdd { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger) !important; }
 
-        /* 卡片通用 */
-        .panel {
-            background: var(--card-bg);
-            padding: 16px;
-            border-radius: var(--radius);
-            border: 1px solid var(--border-color);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
+        .lb { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+              background: rgba(0,0,0,.85); z-index: 1000; justify-content: center; align-items: center; }
+        .lb img { max-width: 92%; max-height: 85%; border-radius: 8px; }
 
-        .panel h2 {
-            font-size: 1.1rem;
-            margin-bottom: 14px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #f1f5f9;
-            color: var(--text-main);
-        }
+        /* Stats */
+        .ss { display: grid; grid-template-columns: 1fr; gap: 14px; }
+        @media(min-width:550px){ .ss { grid-template-columns: 1fr 1fr; } }
+        .cb { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; }
+        .cb h3 { font-size: .9rem; margin-bottom: 10px; }
+        .brw { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+        .brl { width: 80px; font-size: .72rem; color: var(--sub); text-align: right; flex-shrink: 0; }
+        .brt { flex: 1; height: 18px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+        .brf { height: 100%; border-radius: 4px; transition: width .5s; min-width: 2px; }
+        .brv { width: 28px; font-size: .72rem; font-weight: 600; }
+        .dw { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+        .dlg { display: flex; flex-direction: column; gap: 5px; }
+        .li { display: flex; align-items: center; gap: 5px; font-size: .75rem; color: var(--sub); }
+        .ld { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+        .br { text-align: center; padding: 14px 0; }
+        .br .nm { font-size: 2.5rem; font-weight: 800; line-height: 1; }
+        .br .st { font-size: .8rem; color: var(--sub); margin-top: 4px; }
+        .tlb { display: flex; align-items: flex-end; gap: 4px; height: 80px; }
+        .tc2 { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+        .tb2 { width: 100%; max-width: 26px; border-radius: 3px 3px 0 0; transition: height .4s; }
+        .tlab { font-size: .58rem; color: var(--sub); }
 
-        /* 表單樣式 */
-        .form-group {
-            margin-bottom: 14px;
-        }
+        /* Backup */
+        .bks { display: flex; flex-direction: column; gap: 12px; }
+        .bkst { background: var(--bg); border-radius: 10px; padding: 12px; display: flex; align-items: center; gap: 10px; }
+        .bkd { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
+        .bki .bkt { font-size: .85rem; font-weight: 600; }
+        .bki .bktm { font-size: .7rem; color: var(--sub); }
+        .bka { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .bbk { padding: 11px; border-radius: 10px; border: 2px solid var(--border); background: var(--card);
+               font-size: .82rem; font-weight: 600; cursor: pointer; color: var(--text); text-align: center; }
+        .bbk:active { transform: scale(.97); }
+        .bbk.bp { border-color: var(--pri); color: var(--pri); }
+        .bbk.bd2 { border-color: var(--danger); color: var(--danger); }
+        .bkw { font-size: .72rem; color: var(--warn); background: #fef3c7; padding: 10px; border-radius: 10px; line-height: 1.4; }
+        [data-theme="dark"] .bkw { background: #422006; }
 
-        .form-group label {
-            display: block;
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: var(--text-sub);
-        }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(70px);
+                 background: var(--text); color: var(--bg); padding: 10px 24px; border-radius: 10px;
+                 font-size: .85rem; z-index: 2000; opacity: 0; transition: all .25s; pointer-events: none; }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .es { text-align: center; color: var(--sub); padding: 30px; font-size: .9rem; }
 
-        input[type="text"], select, textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 1rem;
-            outline: none;
-            background: #f8fafc;
-        }
-
-        input[type="text"]:focus, select:focus, textarea:focus {
-            border-color: var(--primary);
-            background: #fff;
-        }
-
-        /* 大按鈕區 (針對現場車間設計) */
-        .media-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 14px;
-        }
-
-        .btn-media {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 14px 8px;
-            background: #e2e8f0;
-            border: 2px dashed #94a3b8;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-main);
-            transition: all 0.2s;
-        }
-
-        .btn-media:active {
-            transform: scale(0.98);
-        }
-
-        .btn-media.recording {
-            background: #fee2e2;
-            border-color: var(--danger);
-            color: var(--danger);
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.6; }
-            100% { opacity: 1; }
-        }
-
-        .preview-box {
-            margin-top: 8px;
-            font-size: 0.8rem;
-            color: var(--text-sub);
-        }
-
-        .preview-box img {
-            max-width: 100%;
-            max-height: 120px;
-            border-radius: 6px;
-            margin-top: 4px;
-            display: block;
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 14px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);
-        }
-
-        .btn-submit:active {
-            background: var(--primary-hover);
-        }
-
-        /* 過濾標籤 */
-        .filter-bar {
-            display: flex;
-            gap: 6px;
-            overflow-x: auto;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
-        }
-
-        .filter-btn {
-            padding: 6px 12px;
-            border-radius: 20px;
-            border: 1px solid var(--border-color);
-            background: #fff;
-            font-size: 0.8rem;
-            white-space: nowrap;
-            cursor: pointer;
-        }
-
-        .filter-btn.active {
-            background: #1e293b;
-            color: #fff;
-            border-color: #1e293b;
-        }
-
-        /* 任務列表與卡片 */
-        .task-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .task-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-left: 5px solid var(--primary);
-            border-radius: 8px;
-            padding: 14px;
-            position: relative;
-        }
-
-        /* 4天超時危險警告樣式 */
-        .task-card.is-danger {
-            border-left-color: var(--danger);
-            background: var(--danger-bg);
-            border-color: #fca5a5;
-        }
-
-        .danger-badge {
-            display: inline-flex;
-            align-items: center;
-            background: var(--danger);
-            color: white;
-            font-size: 0.7rem;
-            font-weight: bold;
-            padding: 2px 8px;
-            border-radius: 4px;
-            margin-bottom: 6px;
-        }
-
-        .task-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 6px;
-        }
-
-        .task-title {
-            font-size: 1rem;
-            font-weight: bold;
-            color: var(--text-main);
-        }
-
-        .task-meta {
-            font-size: 0.75rem;
-            color: var(--text-sub);
-            margin-bottom: 8px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .task-media {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin: 10px 0;
-            background: rgba(0, 0, 0, 0.03);
-            padding: 8px;
-            border-radius: 6px;
-        }
-
-        .task-media img {
-            width: 60px;
-            height: 60px;
-            object-fit: cover;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .task-media audio {
-            height: 36px;
-            max-width: 200px;
-        }
-
-        .task-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 10px;
-            padding-top: 8px;
-            border-top: 1px dashed #e2e8f0;
-        }
-
-        .status-select {
-            padding: 4px 8px;
-            font-size: 0.8rem;
-            width: auto;
-        }
-
-        .btn-delete {
-            background: transparent;
-            border: none;
-            color: #94a3b8;
-            font-size: 0.8rem;
-            cursor: pointer;
-            padding: 4px 8px;
-        }
-
-        .btn-delete:hover {
-            color: var(--danger);
-        }
-
-        /* 燈箱Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top:0; left:0; width:100%; height:100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal img {
-            max-width: 90%;
-            max-height: 80%;
-            border-radius: 8px;
-        }
+        /* Dept manager */
+        .dept-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .dept-tag { font-size: .72rem; background: var(--bg); border: 1px solid var(--border);
+                    padding: 3px 8px; border-radius: 12px; color: var(--sub); display: flex; align-items: center; gap: 4px; }
+        .dept-tag .dx { cursor: pointer; color: var(--danger); font-weight: bold; margin-left: 2px; }
     </style>
 </head>
 <body>
-
-    <!-- 頂部數據看板 -->
     <header>
-        <h1>
-            <span>🏭 工廠現場 To-Do 追蹤</span>
-            <span style="font-size: 0.8rem; font-weight: normal; color: #cbd5e1;" id="current-date"></span>
-        </h1>
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="num" id="stat-total">0</div>
-                <div class="label">總任務</div>
+        <div class="h-top">
+            <div>
+                <div class="h-title">📌 我的待辦</div>
+                <div class="h-date" id="cur-date"></div>
             </div>
-            <div class="stat-card">
-                <div class="num" id="stat-pending">0</div>
-                <div class="label">待處理</div>
+            <div class="h-right">
+                <button class="btn-i" id="theme-btn" title="深色模式">🌙</button>
             </div>
-            <div class="stat-card">
-                <div class="num" id="stat-progress">0</div>
-                <div class="label">進行中</div>
-            </div>
-            <div class="stat-card danger-stat">
-                <div class="num" id="stat-danger">0</div>
-                <div class="label">⚠️超過4天</div>
-            </div>
+        </div>
+        <div class="sg">
+            <div class="sc"><div class="n" id="s-total">0</div><div class="l">全部</div></div>
+            <div class="sc"><div class="n" id="s-pend">0</div><div class="l">待辦</div></div>
+            <div class="sc"><div class="n" id="s-prog">0</div><div class="l">進行中</div></div>
+            <div class="sc dng"><div class="n" id="s-dng">0</div><div class="l">逾期</div></div>
         </div>
     </header>
 
-    <div class="container">
-        <!-- 快速新增任務面板 -->
-        <div class="panel">
-            <h2>➕ 快速錄入任務</h2>
-            <form id="todo-form">
-                <div class="form-group">
-                    <label for="task-title">任務 / 瑕疵標題 *</label>
-                    <input type="text" id="task-title" placeholder="例如：2號機玻璃熱彎公差過大" required>
-                </div>
+    <div class="tabs">
+        <button class="tab on" data-t="tasks">📋 任務</button>
+        <button class="tab" data-t="stats">📊 統計</button>
+        <button class="tab" data-t="backup">💾 備份</button>
+    </div>
 
-                <div class="form-group">
-                    <label for="task-dept">責任部門 / 類別</label>
-                    <select id="task-dept">
-                        <option value="車間生產">車間生產</option>
-                        <option value="品質檢驗 (QC)">品質檢驗 (QC)</option>
-                        <option value="設備維護">設備維護</option>
-                        <option value="寫字樓行政">寫字樓行政</option>
-                        <option value="其他">其他</option>
+    <!-- ====== TASKS ====== -->
+    <div class="tc on" id="tc-tasks">
+        <div class="wrap">
+            <div class="pnl">
+                <h2>✏️ 新增待辦</h2>
+                <form id="frm">
+                    <!-- Category -->
+                    <div class="fg">
+                        <label>分類</label>
+                        <div class="cg" id="cat-chips">
+                            <span class="ch on" data-c="work" data-v="工作">💼 工作</span>
+                            <span class="ch" data-c="personal" data-v="個人">🙋 個人</span>
+                            <span class="ch" data-c="home" data-v="家庭">🏠 家庭</span>
+                            <span class="ch" data-c="health" data-v="健康">💪 健康</span>
+                            <span class="ch" data-c="finance" data-v="財務">💰 財務</span>
+                            <span class="ch" data-c="learn" data-v="學習">📚 學習</span>
+                            <span class="ch" data-c="social" data-v="社交">👥 社交</span>
+                            <span class="ch" data-c="other" data-v="其他">📎 其他</span>
+                        </div>
+                    </div>
+                    <!-- Quick titles per category -->
+                    <div class="fg">
+                        <label>常見項目（點選或自行輸入）</label>
+                        <div class="cg" id="quick-chips"></div>
+                        <input type="text" id="inp-title" placeholder="或直接輸入..." style="margin-top:7px" required>
+                    </div>
+                    <div class="fr2">
+                        <div class="fg">
+                            <label>優先級</label>
+                            <div class="cg" id="pri-chips">
+                                <span class="ch pl on" data-p="低">🟢 低</span>
+                                <span class="ch pm" data-p="中">🟡 中</span>
+                                <span class="ch ph" data-p="高">🔴 高</span>
+                            </div>
+                        </div>
+                        <div class="fg">
+                            <label>截止日期</label>
+                            <input type="date" id="inp-dl">
+                        </div>
+                    </div>
+                    <div class="fr2">
+                        <div class="fg">
+                            <label>循環</label>
+                            <div class="cg" id="rec-chips">
+                                <span class="ch on" data-c="blue" data-r="none">無</span>
+                                <span class="ch" data-c="purple" data-r="daily">每日</span>
+                                <span class="ch" data-c="purple" data-r="weekly">每週</span>
+                                <span class="ch" data-c="purple" data-r="monthly">每月</span>
+                            </div>
+                        </div>
+                        <div class="fg">
+                            <label>負責 / 標籤</label>
+                            <select id="inp-tag"></select>
+                        </div>
+                    </div>
+
+                    <div class="ma">
+                        <label class="bm" for="f-photo">📷 拍照/選圖
+                            <input type="file" id="f-photo" accept="image/*" capture="environment" multiple style="display:none">
+                        </label>
+                        <button type="button" class="bm" id="rec-btn">🎙️ <span id="rec-txt">錄音</span></button>
+                    </div>
+                    <div id="pv-photo" class="pv" style="display:none">
+                        <span id="pv-cnt"></span>
+                        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px" id="pv-th"></div>
+                    </div>
+                    <div id="pv-audio" class="pv" style="display:none;margin-bottom:8px">
+                        <audio id="pv-aud" controls style="width:100%;height:36px"></audio>
+                    </div>
+
+                    <div class="fg">
+                        <label>備註</label>
+                        <textarea id="inp-note" rows="2" placeholder="補充說明..."></textarea>
+                    </div>
+                    <button type="submit" class="bsub">新增待辦</button>
+                </form>
+                <!-- Tag Manager -->
+                <details style="margin-top:14px;font-size:.8rem;color:var(--sub)">
+                    <summary style="cursor:pointer;font-weight:600">管理標籤選項</summary>
+                    <div style="display:flex;gap:6px;margin-top:8px">
+                        <input type="text" id="new-tag" placeholder="新標籤名稱..." style="flex:1;padding:8px;font-size:.85rem">
+                        <button type="button" onclick="addTag()" style="padding:8px 14px;background:var(--pri);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer">新增</button>
+                    </div>
+                    <div class="dept-list" id="tag-list"></div>
+                </details>
+            </div>
+
+            <div class="pnl" id="list-pnl">
+                <h2>📋 所有待辦</h2>
+                <div class="sb"><input type="text" id="inp-search" placeholder="搜尋..."></div>
+                <div class="fb" id="fbar">
+                    <button class="fbtn on" data-f="all">全部</button>
+                    <button class="fbtn" data-f="danger">⚠️逾期</button>
+                    <button class="fbtn" data-f="待處理">待辦</button>
+                    <button class="fbtn" data-f="處理中">進行中</button>
+                    <button class="fbtn" data-f="已完成">已完成</button>
+                    <button class="fbtn" data-f="recurring">🔁循環</button>
+                </div>
+                <!-- Category sub-filter -->
+                <div class="fb" id="cat-filter">
+                    <button class="fbtn on" data-cf="all">所有分類</button>
+                </div>
+                <div class="sr">
+                    排序
+                    <select id="sel-sort">
+                        <option value="newest">最新</option><option value="oldest">最早</option>
+                        <option value="deadline">截止日</option><option value="priority">優先級</option>
+                        <option value="category">分類</option>
                     </select>
+                    <button class="bdel" onclick="toggleBatch()" id="bb-tog">☑️ 批量</button>
                 </div>
-
-                <!-- 多媒體輸入大按鈕區 -->
-                <div class="media-actions">
-                    <!-- 拍照按鈕 -->
-                    <label class="btn-media" for="photo-input">
-                        📷 現場拍照
-                        <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none;">
-                    </label>
-
-                    <!-- 錄音按鈕 -->
-                    <button type="button" class="btn-media" id="record-btn">
-                        🎙️ <span id="record-text">按住/點擊錄音</span>
-                    </button>
+                <div class="bb" id="bb"><span id="bb-cnt">已選 0</span>
+                    <button onclick="batchDone()">✅ 完成</button>
+                    <button onclick="batchDel()">🗑️ 刪除</button>
+                    <button onclick="toggleBatch()">取消</button>
                 </div>
-
-                <!-- 媒體預覽區 -->
-                <div id="photo-preview" class="preview-box" style="display:none;">
-                    圖片預覽：<br>
-                    <img id="preview-img" src="" alt="現場照片">
-                </div>
-                <div id="audio-preview" class="preview-box" style="display:none; margin-bottom: 12px;">
-                    語音預覽：<br>
-                    <audio id="preview-audio" controls></audio>
-                </div>
-
-                <div class="form-group">
-                    <label for="task-note">補充說明 (可選)</label>
-                    <textarea id="task-note" rows="2" placeholder="詳細情況備註..."></textarea>
-                </div>
-
-                <button type="submit" class="btn-submit">儲存並建立任務</button>
-            </form>
-        </div>
-
-        <!-- 任務清單與看板面板 -->
-        <div class="panel">
-            <h2>📋 任務清單</h2>
-            
-            <!-- 過濾條 -->
-            <div class="filter-bar">
-                <button class="filter-btn active" data-filter="all">全部</button>
-                <button class="filter-btn" data-filter="danger">⚠️ 4天危險警告</button>
-                <button class="filter-btn" data-filter="待處理">待處理</button>
-                <button class="filter-btn" data-filter="處理中">處理中</button>
-                <button class="filter-btn" data-filter="已完成">已完成</button>
-            </div>
-
-            <!-- 任務列表 -->
-            <div class="task-list" id="task-container">
-                <!-- 動態載入任務 -->
+                <div class="tl" id="tcon"></div>
             </div>
         </div>
     </div>
 
-    <!-- 相片放大Modal -->
-    <div class="modal" id="image-modal" onclick="this.style.display='none'">
-        <img id="modal-img" src="" alt="放大照片">
+    <!-- ====== STATS ====== -->
+    <div class="tc" id="tc-stats"><div class="ss" id="scon"></div></div>
+
+    <!-- ====== BACKUP ====== -->
+    <div class="tc" id="tc-backup">
+        <div class="pnl">
+            <h2>💾 備份與還原</h2>
+            <div class="bks">
+                <div class="bkst"><div class="bkd" id="bk-dot"></div><div class="bki"><div class="bkt">自動備份</div><div class="bktm" id="bk-tm">尚未備份</div></div></div>
+                <div class="bka">
+                    <button class="bbk bp" onclick="expJSON()">📥 匯出 JSON</button>
+                    <label class="bbk bp" style="cursor:pointer">📤 匯入 JSON<input type="file" id="imp-f" accept=".json" style="display:none"></label>
+                    <button class="bbk" onclick="expCSV()">📊 匯出 CSV</button>
+                    <button class="bbk" onclick="forceBk()">🔄 立即備份</button>
+                </div>
+                <button class="bbk bd2" style="width:100%" onclick="clearAll()">🗑️ 清除所有資料</button>
+                <div class="bkw">⚠️ 資料存放於此瀏覽器中，清除瀏覽器資料時會一併消失。建議定期匯出 JSON 檔案保存。</div>
+                <div id="bk-log" style="font-size:.7rem;color:var(--sub);max-height:110px;overflow-y:auto"></div>
+            </div>
+        </div>
     </div>
 
-    <script>
-        // --- 1. IndexedDB 資料庫初始化 (支援Blob大檔案儲存) ---
-        const DB_NAME = 'FactoryTodoDB';
-        const DB_VERSION = 1;
-        let db;
+    <div class="ov" id="det-ov">
+        <div class="dm"><button class="mc" onclick="closeDet()">✕</button>
+            <h3 id="d-title"></h3><div id="d-body"></div>
+        </div>
+    </div>
+    <div class="lb" id="lb" onclick="this.style.display='none'"><img id="lb-img" src=""></div>
+    <div class="toast" id="toast"></div>
 
-        function initDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onupgradeneeded = (e) => {
-                    const db = e.target.result;
-                    if (!db.objectStoreNames.contains('tasks')) {
-                        const store = db.createObjectStore('tasks', { keyPath: 'id', autoIncrement: true });
-                        store.createIndex('status', 'status', { unique: false });
-                        store.createIndex('createdAt', 'createdAt', { unique: false });
-                    }
-                };
-                request.onsuccess = (e) => {
-                    db = e.target.result;
-                    resolve(db);
-                };
-                request.onerror = (e) => reject(e.target.error);
-            });
-        }
+<script>
+const DB='MyTodoDB',VER=1;let db;
+function initDB(){return new Promise((ok,no)=>{const r=indexedDB.open(DB,VER);
+r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('tasks')){
+d.createObjectStore('tasks',{keyPath:'id',autoIncrement:true})}};
+r.onsuccess=e=>{db=e.target.result;ok()};r.onerror=e=>no(e.target.error)})}
+const iAll=s=>new Promise((o,n)=>{const r=s.getAll();r.onsuccess=()=>o(r.result||[]);r.onerror=()=>n(r.error)});
+const iGet=(s,id)=>new Promise((o,n)=>{const r=s.get(id);r.onsuccess=()=>o(r.result);r.onerror=()=>n(r.error)});
+const iAdd=(s,d)=>new Promise((o,n)=>{const r=s.add(d);r.onsuccess=()=>o(r.result);r.onerror=()=>n(r.error)});
+const iPut=(s,d)=>new Promise((o,n)=>{const r=s.put(d);r.onsuccess=()=>o(r.result);r.onerror=()=>n(r.error)});
 
-        // --- 2. 狀態與全域變數 ---
-        let currentFilter = 'all';
-        let currentPhotoBlob = null;
-        let currentAudioBlob = null;
-        let mediaRecorder = null;
-        let audioChunks = [];
-        let isRecording = false;
+let cFilter='all',cCatF='all',cSort='newest',sQ='',bMode=false,selIds=new Set();
+let cPhotos=[],cAudio=null,mRec=null,aChunks=[],isRec=false,selPri='低',selRec='none',selCat='工作';
 
-        // --- 3. DOM 元素 ---
-        const photoInput = document.getElementById('photo-input');
-        const photoPreview = document.getElementById('photo-preview');
-        const previewImg = document.getElementById('preview-img');
-        const recordBtn = document.getElementById('record-btn');
-        const recordText = document.getElementById('record-text');
-        const audioPreview = document.getElementById('audio-preview');
-        const previewAudio = document.getElementById('preview-audio');
-        const todoForm = document.getElementById('todo-form');
-        const taskContainer = document.getElementById('task-container');
+const QUICK={
+    '工作':['開會','寫報告','回覆郵件','跟進客戶','設備檢查','品質檢驗','庫存盤點','提交文件'],
+    '個人':['預約','繳費','取快遞','辦證件','整理文件','備份資料','買東西'],
+    '家庭':['打掃','維修','繳水電','買日用品','煮飯','洗衣服','倒垃圾'],
+    '健康':['運動','體檢','買藥','覆診','量血壓','飲水提醒'],
+    '財務':['記帳','繳稅','轉帳','查帳單','保險續期','理財檢視'],
+    '學習':['看書','練習','上課','做筆記','考試溫習','看教學影片'],
+    '社交':['聚餐','送禮','回訊息','拜訪','約時間'],
+    '其他':['備忘','提醒','待確認']
+};
 
-        // 初始化日期顯示
-        document.getElementById('current-date').textContent = new Date().toLocaleDateString('zh-TW', {
-            year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short'
-        });
+const DEF_TAGS=['車間','辦公室','個人','家裏','外出'];
+function getTags(){const s=localStorage.getItem('my_tags');return s?JSON.parse(s):[...DEF_TAGS]}
+function saveTags(a){localStorage.setItem('my_tags',JSON.stringify(a))}
+function renderTags(){
+    const sel=document.getElementById('inp-tag');sel.innerHTML='<option value="">（無標籤）</option>';
+    getTags().forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o)});
+    const list=document.getElementById('tag-list');list.innerHTML='';
+    getTags().forEach(t=>{const d=document.createElement('span');d.className='dept-tag';
+    d.innerHTML=`${esc(t)} <span class="dx" onclick="delTag('${esc(t)}')">✕</span>`;list.appendChild(d)});
+}
+function addTag(){const i=document.getElementById('new-tag');const v=i.value.trim();if(!v)return;
+const a=getTags();if(a.includes(v)){toast('已存在');return}a.push(v);saveTags(a);renderTags();i.value='';toast('已新增')}
+function delTag(v){const a=getTags().filter(x=>x!==v);saveTags(a);renderTags()}
 
-        // --- 4. 媒體處理：相片選擇與預覽 ---
-        photoInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                currentPhotoBlob = file;
-                previewImg.src = URL.createObjectURL(file);
-                photoPreview.style.display = 'block';
-            }
-        });
+document.getElementById('cur-date').textContent=new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',weekday:'short'});
+renderTags();
 
-        // --- 5. 媒體處理：語音錄製 (MediaRecorder API) ---
-        recordBtn.addEventListener('click', async () => {
-            if (!isRecording) {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream);
-                    audioChunks = [];
+// Theme
+const tBtn=document.getElementById('theme-btn');
+function setTheme(d){document.documentElement.setAttribute('data-theme',d?'dark':'light');tBtn.textContent=d?'☀️':'🌙';localStorage.setItem('theme',d?'dark':'light')}
+tBtn.onclick=()=>setTheme(document.documentElement.getAttribute('data-theme')!=='dark');
+setTheme(localStorage.getItem('theme')==='dark');
 
-                    mediaRecorder.ondataavailable = (e) => {
-                        if (e.data.size > 0) audioChunks.push(e.data);
-                    };
+// Tabs
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.tc').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');document.getElementById('tc-'+b.dataset.t).classList.add('on');
+    if(b.dataset.t==='stats')renderStats();if(b.dataset.t==='backup')updBk()});
 
-                    mediaRecorder.onstop = () => {
-                        currentAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                        previewAudio.src = URL.createObjectURL(currentAudioBlob);
-                        audioPreview.style.display = 'block';
-                        // 關閉麥克風軌道
-                        stream.getTracks().forEach(track => track.stop());
-                    };
+// Category chips
+function renderQuick(){
+    const cg=document.getElementById('quick-chips');cg.innerHTML='';
+    (QUICK[selCat]||[]).forEach(v=>{const s=document.createElement('span');s.className='ch';s.dataset.c='blue';s.dataset.v=v;
+    s.textContent=v;s.onclick=()=>{cg.querySelectorAll('.ch').forEach(x=>x.classList.remove('on'));
+    s.classList.add('on');document.getElementById('inp-title').value=v};cg.appendChild(s)});
+}
+document.querySelectorAll('#cat-chips .ch').forEach(c=>c.onclick=()=>{
+    document.querySelectorAll('#cat-chips .ch').forEach(x=>x.classList.remove('on'));
+    c.classList.add('on');selCat=c.dataset.v;renderQuick()});
+renderQuick();
 
-                    mediaRecorder.start();
-                    isRecording = true;
-                    recordBtn.classList.add('recording');
-                    recordText.textContent = '錄音中... 點擊停止';
-                } catch (err) {
-                    alert('無法開啟麥克風權限：' + err.message);
-                }
-            } else {
-                mediaRecorder.stop();
-                isRecording = false;
-                recordBtn.classList.remove('recording');
-                recordText.textContent = '重新錄音';
-            }
-        });
+// Category filter
+function renderCatFilter(){
+    const bar=document.getElementById('cat-filter');
+    const cats=Object.keys(QUICK);
+    bar.innerHTML='<button class="fbtn on" data-cf="all">所有分類</button>';
+    cats.forEach(c=>{const b=document.createElement('button');b.className='fbtn';b.dataset.cf=c;b.textContent=c;
+    b.onclick=()=>{cCatF=c;bar.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('on'));b.classList.add('on');loadTasks()};
+    bar.appendChild(b)});
+    bar.querySelector('[data-cf="all"]').onclick=()=>{cCatF='all';bar.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('on'));
+    bar.querySelector('[data-cf="all"]').classList.add('on');loadTasks()};
+}
+renderCatFilter();
 
-        // --- 6. 任務新增與儲存 ---
-        todoForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+document.getElementById('inp-title').addEventListener('input',()=>{
+    document.querySelectorAll('#quick-chips .ch').forEach(x=>x.classList.remove('on'))});
 
-            const title = document.getElementById('task-title').value.trim();
-            const dept = document.getElementById('task-dept').value;
-            const note = document.getElementById('task-note').value.trim();
+// Priority
+document.querySelectorAll('#pri-chips .ch').forEach(c=>c.onclick=()=>{
+    document.querySelectorAll('#pri-chips .ch').forEach(x=>x.classList.remove('on'));c.classList.add('on');selPri=c.dataset.p});
+// Rec
+document.querySelectorAll('#rec-chips .ch').forEach(c=>c.onclick=()=>{
+    document.querySelectorAll('#rec-chips .ch').forEach(x=>x.classList.remove('on'));c.classList.add('on');selRec=c.dataset.r});
+// Filters
+document.querySelectorAll('#fbar .fbtn').forEach(b=>b.onclick=()=>{
+    cFilter=b.dataset.f;document.querySelectorAll('#fbar .fbtn').forEach(x=>x.classList.remove('on'));b.classList.add('on');loadTasks()});
+document.getElementById('sel-sort').onchange=e=>{cSort=e.target.value;loadTasks()};
+document.getElementById('inp-search').oninput=e=>{sQ=e.target.value.trim().toLowerCase();loadTasks()};
 
-            if (!title) return;
+// Photo
+document.getElementById('f-photo').onchange=e=>{cPhotos.push(...Array.from(e.target.files));renderPV()};
+function renderPV(){const b=document.getElementById('pv-photo'),th=document.getElementById('pv-th'),cn=document.getElementById('pv-cnt');
+if(!cPhotos.length){b.style.display='none';return}b.style.display='block';cn.textContent=`${cPhotos.length} 張`;
+th.innerHTML='';cPhotos.forEach((f,i)=>{const img=document.createElement('img');img.src=URL.createObjectURL(f);
+img.style.cssText='width:44px;height:44px;object-fit:cover;border-radius:4px;cursor:pointer';
+img.onclick=()=>{cPhotos.splice(i,1);renderPV()};th.appendChild(img)})}
 
-            const taskData = {
-                title,
-                dept,
-                note,
-                status: '待處理',
-                createdAt: Date.now(),
-                photoBlob: currentPhotoBlob,
-                audioBlob: currentAudioBlob
-            };
+// Audio
+const rBtn=document.getElementById('rec-btn'),rTxt=document.getElementById('rec-txt');
+rBtn.onclick=async()=>{if(!isRec){try{const s=await navigator.mediaDevices.getUserMedia({audio:true});
+mRec=new MediaRecorder(s);aChunks=[];mRec.ondataavailable=e=>{if(e.data.size>0)aChunks.push(e.data)};
+mRec.onstop=()=>{cAudio=new Blob(aChunks,{type:'audio/webm'});document.getElementById('pv-aud').src=URL.createObjectURL(cAudio);
+document.getElementById('pv-audio').style.display='block';s.getTracks().forEach(t=>t.stop())};
+mRec.start();isRec=true;rBtn.classList.add('rec');rTxt.textContent='停止'}catch(e){alert('麥克風：'+e.message)}}
+else{mRec.stop();isRec=false;rBtn.classList.remove('rec');rTxt.textContent='重錄'}};
 
-            const tx = db.transaction('tasks', 'readwrite');
-            const store = tx.objectStore('tasks');
-            await store.add(taskData);
+// Submit
+document.getElementById('frm').onsubmit=async e=>{e.preventDefault();
+const title=document.getElementById('inp-title').value.trim();if(!title)return;
+const task={title,category:selCat,tag:document.getElementById('inp-tag').value,
+note:document.getElementById('inp-note').value.trim(),deadline:document.getElementById('inp-dl').value||null,
+priority:selPri,status:'待處理',createdAt:Date.now(),completedAt:null,
+recurrence:selRec,recSrcId:null,photoBlobs:cPhotos.length?[...cPhotos]:[],audioBlob:cAudio};
+const tx=db.transaction('tasks','readwrite');await iAdd(tx.objectStore('tasks'),task);
+document.getElementById('frm').reset();cPhotos=[];cAudio=null;selPri='低';selRec='none';selCat='工作';
+document.getElementById('pv-photo').style.display='none';document.getElementById('pv-audio').style.display='none';
+rTxt.textContent='錄音';
+document.querySelectorAll('#cat-chips .ch').forEach(x=>x.classList.remove('on'));
+document.querySelector('#cat-chips .ch[data-v="工作"]').classList.add('on');
+document.querySelectorAll('#pri-chips .ch').forEach(x=>x.classList.remove('on'));
+document.querySelector('.pl').classList.add('on');
+document.querySelectorAll('#rec-chips .ch').forEach(x=>x.classList.remove('on'));
+document.querySelector('[data-r="none"]').classList.add('on');
+renderQuick();await loadTasks();autoBk();toast('已新增')};
 
-            // 清空表單
-            todoForm.reset();
-            currentPhotoBlob = null;
-            currentAudioBlob = null;
-            photoPreview.style.display = 'none';
-            audioPreview.style.display = 'none';
-            recordText.textContent = '按住/點擊錄音';
+// Recurring
+async function procRec(){const tx=db.transaction('tasks','readonly');const tasks=await iAll(tx.objectStore('tasks'));
+const td=new Date();td.setHours(0,0,0,0);const tMs=td.getTime();let g=0;
+for(const t of tasks){if(!t.recurrence||t.recurrence==='none'||t.recSrcId)continue;
+const l=t.lastGen||t.createdAt;const ld=new Date(l);ld.setHours(0,0,0,0);let go=false;
+if(t.recurrence==='daily')go=tMs>ld.getTime();
+else if(t.recurrence==='weekly')go=(tMs-ld.getTime())>=7*864e5;
+else if(t.recurrence==='monthly')go=((td.getFullYear()-ld.getFullYear())*12+td.getMonth()-ld.getMonth())>=1;
+if(go){const nw={title:t.title,category:t.category,tag:t.tag,note:t.note,deadline:null,priority:t.priority||'低',
+status:'待處理',createdAt:Date.now(),completedAt:null,recurrence:'none',recSrcId:t.id,photoBlobs:[],audioBlob:null};
+const tw=db.transaction('tasks','readwrite');await iAdd(tw.objectStore('tasks'),nw);
+const tu=db.transaction('tasks','readwrite');const su=tu.objectStore('tasks');
+const tm=await iGet(su,t.id);if(tm){tm.lastGen=Date.now();su.put(tm)}g++}}
+if(g)toast(`已自動產生 ${g} 項循環任務`)}
 
-            loadTasks();
-        });
+// Load
+const FOUR=4*864e5,PO={高:3,中:2,低:1};
+const CAT_ICON={'工作':'💼','個人':'🙋','家庭':'🏠','健康':'💪','財務':'💰','學習':'📚','社交':'👥','其他':'📎'};
 
-        // --- 7. 載入並渲染任務 (計算 4 天超時邏輯) ---
-        async function loadTasks() {
-            const tx = db.transaction('tasks', 'readonly');
-            const store = tx.objectStore('tasks');
-            const request = store.getAll();
+async function loadTasks(){const tx=db.transaction('tasks','readonly');const tasks=await iAll(tx.objectStore('tasks'));
+render(tasks);updStats(tasks)}
 
-            request.onsuccess = () => {
-                const tasks = request.result || [];
-                renderTasks(tasks);
-                updateStats(tasks);
-            };
-        }
+function render(tasks){const c=document.getElementById('tcon');c.innerHTML='';const now=Date.now();
+let list=tasks.filter(t=>{
+    const age=now-t.createdAt;const ov=t.deadline?(new Date(t.deadline).getTime()<now&&t.status!=='已完成'):false;
+    const dng=t.status!=='已完成'&&(age>=FOUR||ov);
+    if(sQ&&!t.title.toLowerCase().includes(sQ)&&!(t.note||'').toLowerCase().includes(sQ)&&!(t.category||'').toLowerCase().includes(sQ)&&!(t.tag||'').toLowerCase().includes(sQ))return false;
+    if(cCatF!=='all'&&t.category!==cCatF)return false;
+    if(cFilter==='all')return true;if(cFilter==='danger')return dng;
+    if(cFilter==='recurring')return t.recurrence&&t.recurrence!=='none';return t.status===cFilter});
+list.sort((a,b)=>{if(cSort==='newest')return b.createdAt-a.createdAt;if(cSort==='oldest')return a.createdAt-b.createdAt;
+if(cSort==='deadline'){const da=a.deadline?new Date(a.deadline).getTime():Infinity;const db2=b.deadline?new Date(b.deadline).getTime():Infinity;return da-db2}
+if(cSort==='priority')return(PO[b.priority]||1)-(PO[a.priority]||1);
+if(cSort==='category')return(a.category||'').localeCompare(b.category||'');return 0});
+if(!list.length){c.innerHTML='<div class="es">沒有符合的待辦項目</div>';return}
+list.forEach(t=>{const age=now-t.createdAt;const days=Math.floor(age/864e5);
+const ov=t.deadline?(new Date(t.deadline).getTime()<now&&t.status!=='已完成'):false;
+const dng=t.status!=='已完成'&&(age>=FOUR||ov);const dn=t.status==='已完成';
+const el=document.createElement('div');
+let cls='tk';if(dng)cls+=' dng';else if(dn)cls+=' done';
+else{const p=t.priority||'低';cls+=p==='高'?' bh':p==='中'?' bm2':' bl'}
+el.className=cls;
+const ds=new Date(t.createdAt).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+let bd='';
+if(t.category)bd+=`<span class="bd bd-cat">${CAT_ICON[t.category]||'📎'} ${t.category}</span>`;
+if(dng){const r=ov?'超過截止日':`已 ${days} 天`;bd+=`<span class="bd bd-d">⚠️ ${r}</span>`}
+if(t.priority==='高')bd+=`<span class="bd bd-ph">高</span>`;else if(t.priority==='中')bd+=`<span class="bd bd-pm">中</span>`;
+if(t.recurrence&&t.recurrence!=='none'){const rl={daily:'每日',weekly:'每週',monthly:'每月'};bd+=`<span class="bd bd-rp">🔁${rl[t.recurrence]}</span>`}
+let dlH=t.deadline?`<span>📅 ${t.deadline}</span>`:'';
+let tagH=t.tag?`<span>🏷️ ${t.tag}</span>`:'';
+const pn=(t.photoBlobs?.length)||(t.photoBlob?1:0);
+let thH='';if(pn>0){thH='<div class="tth">';const bl=t.photoBlobs?.length?t.photoBlobs:(t.photoBlob?[t.photoBlob]:[]);
+bl.slice(0,3).forEach(b=>{try{thH+=`<img src="${URL.createObjectURL(b)}">`}catch(e){}});
+if(pn>3)thH+=`<span style="font-size:.7rem;color:var(--sub);align-self:center">+${pn-3}</span>`;thH+='</div>'}
+el.innerHTML=`<input type="checkbox" class="bch" data-id="${t.id}" onchange="updBC()">
+${bd}<div class="tt">${esc(t.title)}</div>
+<div class="tm"><span>🕒 ${ds}</span>${dlH}${tagH}${pn?`<span>📷${pn}</span>`:''}</div>
+${t.note?`<div style="font-size:.78rem;color:var(--sub);margin:3px 0">${esc(t.note).substring(0,60)}${t.note.length>60?'…':''}</div>`:''}
+${thH}
+<div class="tar"><select class="ssel" onclick="event.stopPropagation()" onchange="event.stopPropagation();updSt(${t.id},this.value)">
+<option value="待處理" ${t.status==='待處理'?'selected':''}>待辦</option>
+<option value="處理中" ${t.status==='處理中'?'selected':''}>進行中</option>
+<option value="已完成" ${t.status==='已完成'?'selected':''}>已完成</option></select>
+<button class="bdel" onclick="event.stopPropagation();delT(${t.id})">🗑️</button></div>`;
+el.addEventListener('click',e=>{if(e.target.closest('.bch'))return;openDet(t.id)});c.appendChild(el)})}
 
-        function renderTasks(tasks) {
-            taskContainer.innerHTML = '';
-            const now = Date.now();
-            const FOUR_DAYS_MS = 4 * 24 * 60 * 60 * 1000; // 4天的毫秒數
+// Detail
+async function openDet(id){const tx=db.transaction('tasks','readonly');const t=await iGet(tx.objectStore('tasks'),id);if(!t)return;
+document.getElementById('d-title').textContent=t.title;
+const cr=new Date(t.createdAt).toLocaleString('zh-TW');
+const co=t.completedAt?new Date(t.completedAt).toLocaleString('zh-TW'):'—';
+const photos=t.photoBlobs?.length?t.photoBlobs:(t.photoBlob?[t.photoBlob]:[]);
+let pgH='<div class="pg">';photos.forEach(b=>{try{const u=URL.createObjectURL(b);pgH+=`<img src="${u}" onclick="openLB('${u}')">`}catch(e){}});
+pgH+=`<label class="apb" for="d-padd">+<input type="file" id="d-padd" accept="image/*" capture="environment" multiple style="display:none" onchange="addPh(${id},this)"></label></div>`;
+let auH='';if(t.audioBlob){try{auH=`<audio controls src="${URL.createObjectURL(t.audioBlob)}" style="width:100%;height:40px;margin-top:4px"></audio>`}catch(e){}}
+const b=document.getElementById('d-body');
+b.innerHTML=`
+<div class="dr"><div class="dl2">分類</div><div style="font-size:.9rem">${CAT_ICON[t.category]||''} ${t.category||'未分類'}</div></div>
+<div class="dr"><div class="dl2">狀態</div>
+<select id="d-st" class="ssel" style="width:100%;padding:10px;font-size:.9rem">
+<option value="待處理" ${t.status==='待處理'?'selected':''}>待辦</option>
+<option value="處理中" ${t.status==='處理中'?'selected':''}>進行中</option>
+<option value="已完成" ${t.status==='已完成'?'selected':''}>已完成</option></select></div>
+<div class="dr"><div class="dl2">優先級</div><div class="cg" id="d-pri">
+<span class="ch pl ${t.priority==='低'?'on':''}" data-p="低">🟢 低</span>
+<span class="ch pm ${t.priority==='中'?'on':''}" data-p="中">🟡 中</span>
+<span class="ch ph ${t.priority==='高'?'on':''}" data-p="高">🔴 高</span></div></div>
+<div class="dr"><div class="dl2">標籤</div><div style="font-size:.9rem">${t.tag||'—'}</div></div>
+<div class="dr"><div class="dl2">截止日期</div><input type="date" id="d-dl" value="${t.deadline||''}" style="padding:10px;width:100%"></div>
+<div class="fr2"><div class="dr"><div class="dl2">建立</div><div style="font-size:.85rem">${cr}</div></div>
+<div class="dr"><div class="dl2">完成</div><div style="font-size:.85rem">${co}</div></div></div>
+<div class="dr"><div class="dl2">備註</div><textarea id="d-note" rows="3" style="width:100%;padding:10px;font-size:.88rem">${esc(t.note||'')}</textarea></div>
+<div class="dr"><div class="dl2">照片（點擊放大 · + 追加）</div>${pgH}</div>
+${auH?`<div class="dr"><div class="dl2">語音</div>${auH}</div>`:''}
+<div class="da"><button class="bsv" onclick="saveDet(${id})">💾 儲存</button>
+<button class="bdd" onclick="closeDet();delT(${id})">🗑️ 刪除</button></div>`;
+b.querySelectorAll('#d-pri .ch').forEach(c=>c.onclick=()=>{b.querySelectorAll('#d-pri .ch').forEach(x=>x.classList.remove('on'));c.classList.add('on')});
+document.getElementById('det-ov').classList.add('open')}
 
-            // 排序：先排危險超時，再按時間倒序
-            tasks.sort((a, b) => b.createdAt - a.createdAt);
+async function addPh(id,inp){const files=Array.from(inp.files);if(!files.length)return;
+const tx=db.transaction('tasks','readwrite');const s=tx.objectStore('tasks');const t=await iGet(s,id);if(!t)return;
+if(!t.photoBlobs)t.photoBlobs=t.photoBlob?[t.photoBlob]:[];t.photoBlobs.push(...files);
+await iPut(s,t);await loadTasks();autoBk();openDet(id);toast(`+${files.length} 張`)}
 
-            const filteredTasks = tasks.filter(task => {
-                const ageMs = now - task.createdAt;
-                const isDanger = task.status !== '已完成' && ageMs >= FOUR_DAYS_MS;
-                
-                if (currentFilter === 'all') return true;
-                if (currentFilter === 'danger') return isDanger;
-                return task.status === currentFilter;
-            });
+async function saveDet(id){const tx=db.transaction('tasks','readwrite');const s=tx.objectStore('tasks');
+const t=await iGet(s,id);if(!t)return;
+t.status=document.getElementById('d-st').value;
+const pc=document.querySelector('#d-pri .ch.on');t.priority=pc?pc.dataset.p:'低';
+t.deadline=document.getElementById('d-dl').value||null;t.note=document.getElementById('d-note').value.trim();
+t.completedAt=t.status==='已完成'?(t.completedAt||Date.now()):null;
+await iPut(s,t);closeDet();await loadTasks();autoBk();toast('已儲存')}
 
-            if (filteredTasks.length === 0) {
-                taskContainer.innerHTML = `<div style="text-align:center; color:#94a3b8; padding:30px;">尚無相關任務記錄</div>`;
-                return;
-            }
+function closeDet(){document.getElementById('det-ov').classList.remove('open')}
+function openLB(u){document.getElementById('lb-img').src=u;document.getElementById('lb').style.display='flex'}
 
-            filteredTasks.forEach(task => {
-                const ageMs = now - task.createdAt;
-                const daysOld = Math.floor(ageMs / (1000 * 60 * 60 * 24));
-                const isDanger = task.status !== '已完成' && ageMs >= FOUR_DAYS_MS;
+async function updSt(id,v){const tx=db.transaction('tasks','readwrite');const s=tx.objectStore('tasks');
+const t=await iGet(s,id);if(t){t.status=v;t.completedAt=v==='已完成'?Date.now():null;s.put(t)}
+await loadTasks();autoBk()}
+async function delT(id){if(!confirm('刪除此項？'))return;const tx=db.transaction('tasks','readwrite');
+tx.objectStore('tasks').delete(id);await loadTasks();autoBk();toast('已刪除')}
 
-                const card = document.createElement('div');
-                card.className = `task-card ${isDanger ? 'is-danger' : ''}`;
+// Batch
+function toggleBatch(){bMode=!bMode;selIds.clear();document.getElementById('list-pnl').classList.toggle('bmode',bMode);
+document.getElementById('bb').classList.toggle('show',bMode);document.getElementById('bb-tog').textContent=bMode?'取消':'☑️ 批量';updBC()}
+function updBC(){selIds.clear();document.querySelectorAll('.bch:checked').forEach(c=>selIds.add(+c.dataset.id));
+document.getElementById('bb-cnt').textContent=`已選 ${selIds.size}`}
+async function batchDone(){if(!selIds.size)return;for(const id of selIds){const tx=db.transaction('tasks','readwrite');const s=tx.objectStore('tasks');
+const t=await iGet(s,id);if(t){t.status='已完成';t.completedAt=Date.now();s.put(t)}}toggleBatch();await loadTasks();autoBk();toast('已完成')}
+async function batchDel(){if(!selIds.size||!confirm(`刪除 ${selIds.size} 項？`))return;
+for(const id of selIds){const tx=db.transaction('tasks','readwrite');tx.objectStore('tasks').delete(id)}
+toggleBatch();await loadTasks();autoBk();toast('已刪除')}
 
-                const createDateStr = new Date(task.createdAt).toLocaleString('zh-TW', {
-                    month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
-                });
+function updStats(tasks){const now=Date.now();let p=0,pr=0,d=0;
+tasks.forEach(t=>{if(t.status==='待處理')p++;if(t.status==='處理中')pr++;
+const ov=t.deadline?(new Date(t.deadline).getTime()<now&&t.status!=='已完成'):false;
+if(t.status!=='已完成'&&((now-t.createdAt)>=FOUR||ov))d++});
+document.getElementById('s-total').textContent=tasks.length;document.getElementById('s-pend').textContent=p;
+document.getElementById('s-prog').textContent=pr;document.getElementById('s-dng').textContent=d}
 
-                let photoHtml = '';
-                if (task.photoBlob) {
-                    const imgUrl = URL.createObjectURL(task.photoBlob);
-                    photoHtml = `<img src="${imgUrl}" onclick="openImageModal('${imgUrl}')" title="點擊放大照片">`;
-                }
+// Stats
+async function renderStats(){const tx=db.transaction('tasks','readonly');const tasks=await iAll(tx.objectStore('tasks'));
+const con=document.getElementById('scon');const now=Date.now();
+const ws=new Date();ws.setHours(0,0,0,0);ws.setDate(ws.getDate()-ws.getDay());const wM=ws.getTime();
+const tw=tasks.filter(t=>t.createdAt>=wM);const twD=tw.filter(t=>t.status==='已完成').length;
+const rate=tw.length?Math.round(twD/tw.length*100):0;const rc=rate>=70?'var(--ok)':rate>=40?'var(--warn)':'var(--danger)';
+const cm={};tasks.forEach(t=>{const c=t.category||'其他';cm[c]=(cm[c]||0)+1});
+const ce=Object.entries(cm).sort((a,b)=>b[1]-a[1]);const cc=['#2563eb','#7c3aed','#d97706','#16a34a','#0891b2','#db2777','#ea580c','#64748b'];
+const mx=ce.length?ce[0][1]:1;
+let catH=ce.map(([n,c],i)=>`<div class="brw"><div class="brl">${CAT_ICON[n]||''} ${esc(n)}</div><div class="brt"><div class="brf" style="width:${c/mx*100}%;background:${cc[i%cc.length]}"></div></div><div class="brv">${c}</div></div>`).join('');
+const sc={'待處理':0,'處理中':0,'已完成':0};tasks.forEach(t=>{if(sc.hasOwnProperty(t.status))sc[t.status]++});
+const tot=tasks.length||1;const stc={'待處理':'#d97706','處理中':'#2563eb','已完成':'#16a34a'};
+let cum=0,seg='';Object.entries(sc).forEach(([s,c])=>{const p=c/tot*100;seg+=`<circle cx="50" cy="50" r="40" fill="none" stroke="${stc[s]}" stroke-width="16" stroke-dasharray="${p} ${100-p}" stroke-dashoffset="${-cum}" transform="rotate(-90 50 50)"/>`;cum+=p});
+let lgH=Object.entries(sc).map(([s,c])=>`<div class="li"><div class="ld" style="background:${stc[s]}"></div>${s}：${c}</div>`).join('');
+const dl2=[],dc=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);d.setHours(0,0,0,0);
+const nd=new Date(d);nd.setDate(nd.getDate()+1);dl2.push(`${d.getMonth()+1}/${d.getDate()}`);
+dc.push(tasks.filter(t=>t.createdAt>=d.getTime()&&t.createdAt<nd.getTime()).length)}
+const mxd=Math.max(...dc,1);let tlH=dc.map((c,i)=>`<div class="tc2"><div class="tb2" style="height:${c/mxd*70}px;background:var(--pri)"></div><div class="tlab">${dl2[i]}</div></div>`).join('');
+const ct=tasks.filter(t=>t.status==='已完成'&&t.completedAt);
+let avg=0;if(ct.length)avg=(ct.reduce((s,t)=>s+(t.completedAt-t.createdAt),0)/ct.length/36e5).toFixed(1);
+const pc2={高:0,中:0,低:0};tasks.filter(t=>t.status!=='已完成').forEach(t=>{pc2[t.priority||'低']++});
+const pmx=Math.max(pc2['高'],pc2['中'],pc2['低'])||1;
+con.innerHTML=`
+<div class="cb"><h3>📈 本週完成率</h3><div class="br"><div class="nm" style="color:${rc}">${rate}%</div><div class="st">${twD}/${tw.length} 項</div></div></div>
+<div class="cb"><h3>🍩 狀態</h3><div class="dw"><svg viewBox="0 0 100 100" width="95" height="95">${seg}</svg><div class="dlg">${lgH}</div></div></div>
+<div class="cb"><h3>📂 分類分佈</h3>${catH||'<div class="es">暫無</div>'}</div>
+<div class="cb"><h3>📅 近7天新增</h3><div class="tlb">${tlH}</div></div>
+<div class="cb"><h3>⏱️ 平均完成時效</h3><div class="br"><div class="nm" style="color:var(--pri)">${avg}</div><div class="st">小時</div></div></div>
+<div class="cb"><h3>🚨 未完成優先級</h3>
+<div class="brw"><div class="brl">🔴 高</div><div class="brt"><div class="brf" style="width:${pc2['高']/pmx*100}%;background:var(--danger)"></div></div><div class="brv">${pc2['高']}</div></div>
+<div class="brw"><div class="brl">🟡 中</div><div class="brt"><div class="brf" style="width:${pc2['中']/pmx*100}%;background:var(--warn)"></div></div><div class="brv">${pc2['中']}</div></div>
+<div class="brw"><div class="brl">🟢 低</div><div class="brt"><div class="brf" style="width:${pc2['低']/pmx*100}%;background:var(--ok)"></div></div><div class="brv">${pc2['低']}</div></div></div>`}
 
-                let audioHtml = '';
-                if (task.audioBlob) {
-                    const audioUrl = URL.createObjectURL(task.audioBlob);
-                    audioHtml = `<audio controls src="${audioUrl}"></audio>`;
-                }
+// Backup
+async function autoBk(){try{const tx=db.transaction('tasks','readonly');const tasks=await iAll(tx.objectStore('tasks'));
+const s=tasks.map(t=>{const c={...t};delete c.photoBlobs;delete c.photoBlob;delete c.audioBlob;c.photoCnt=(t.photoBlobs?.length)||(t.photoBlob?1:0);return c});
+localStorage.setItem('mtodo_bk',JSON.stringify(s));localStorage.setItem('mtodo_bk_t',new Date().toISOString());
+bkL('自動備份')}catch(e){bkL('失敗：'+e.message)}}
+function forceBk(){autoBk();updBk();toast('已備份')}
+function updBk(){const t=localStorage.getItem('mtodo_bk_t');const d=document.getElementById('bk-dot');const e=document.getElementById('bk-tm');
+if(t){e.textContent='最後：'+new Date(t).toLocaleString('zh-TW');d.style.background='var(--ok)'}else{e.textContent='尚未備份';d.style.background='var(--warn)'}}
+async function expJSON(){const tx=db.transaction('tasks','readonly');const tasks=await iAll(tx.objectStore('tasks'));
+const s=tasks.map(t=>{const c={...t};delete c.photoBlobs;delete c.photoBlob;delete c.audioBlob;return c});
+dlF(JSON.stringify({at:new Date().toISOString(),v:VER,n:tasks.length,tasks:s},null,2),'application/json',`todo_${new Date().toISOString().slice(0,10)}.json`);
+bkL(`匯出 ${tasks.length}`);toast('JSON 已下載')}
+async function expCSV(){const tx=db.transaction('tasks','readonly');const tasks=await iAll(tx.objectStore('tasks'));
+const h='ID,標題,分類,標籤,優先級,狀態,建立時間,截止日期,完成時間,備註\n';
+const r=tasks.map(t=>[t.id,`"${(t.title||'').replace(/"/g,'""')}"`,t.category||'',t.tag||'',t.priority||'低',t.status,
+new Date(t.createdAt).toISOString(),t.deadline||'',t.completedAt?new Date(t.completedAt).toISOString():'',
+`"${(t.note||'').replace(/"/g,'""')}"`].join(',')).join('\n');
+dlF('\uFEFF'+h+r,'text/csv',`todo_${new Date().toISOString().slice(0,10)}.csv`);bkL('匯出 CSV');toast('CSV 已下載')}
+function dlF(c,t,n){const b=new Blob([c],{type:t});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=n;a.click();URL.revokeObjectURL(u)}
+document.getElementById('imp-f').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+try{const t=await f.text();const d=JSON.parse(t);if(!d.tasks)throw new Error('格式無效');
+if(!confirm(`匯入 ${d.tasks.length} 項？`))return;
+const tx=db.transaction('tasks','readwrite');const s=tx.objectStore('tasks');let n=0;
+for(const t2 of d.tasks){const c={...t2};delete c.id;c.photoBlobs=[];c.audioBlob=null;await iAdd(s,c);n++}
+await loadTasks();autoBk();bkL(`匯入 ${n}`);toast(`匯入 ${n} 項`)}catch(err){alert('失敗：'+err.message)}e.target.value=''};
+async function clearAll(){if(!confirm('⚠️ 刪除所有資料？'))return;if(!confirm('確認清除？'))return;
+const tx=db.transaction('tasks','readwrite');tx.objectStore('tasks').clear();
+localStorage.removeItem('mtodo_bk');localStorage.removeItem('mtodo_bk_t');
+await loadTasks();updBk();toast('已清除')}
+function bkL(m){const e=document.getElementById('bk-log');e.innerHTML=`<div>[${new Date().toLocaleTimeString('zh-TW')}] ${m}</div>`+e.innerHTML}
 
-                let mediaSection = '';
-                if (photoHtml || audioHtml) {
-                    mediaSection = `<div class="task-media">${photoHtml}${audioHtml}</div>`;
-                }
+function esc(t){return(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2e3)}
 
-                card.innerHTML = `
-                    ${isDanger ? `<div class="danger-badge">⚠️ 警告：已建立 ${daysOld} 天未完成 (超過4天)</div>` : ''}
-                    <div class="task-header">
-                        <span class="task-title">${escapeHtml(task.title)}</span>
-                    </div>
-                    <div class="task-meta">
-                        <span>🏷️ ${task.dept}</span>
-                        <span>🕒 ${createDateStr}</span>
-                    </div>
-                    ${task.note ? `<div style="font-size:0.85rem; color:#334155; margin-bottom:8px;">${escapeHtml(task.note)}</div>` : ''}
-                    ${mediaSection}
-                    <div class="task-actions">
-                        <select class="status-select" onchange="updateTaskStatus(${task.id}, this.value)">
-                            <option value="待處理" ${task.status === '待處理' ? 'selected' : ''}>待處理</option>
-                            <option value="處理中" ${task.status === '處理中' ? 'selected' : ''}>處理中</option>
-                            <option value="已完成" ${task.status === '已完成' ? 'selected' : ''}>已完成</option>
-                        </select>
-                        <button class="btn-delete" onclick="deleteTask(${task.id})">🗑️ 刪除</button>
-                    </div>
-                `;
-
-                taskContainer.appendChild(card);
-            });
-        }
-
-        // --- 8. 狀態更新與刪除 ---
-        async function updateTaskStatus(id, newStatus) {
-            const tx = db.transaction('tasks', 'readwrite');
-            const store = tx.objectStore('tasks');
-            const task = await new Promise(res => store.get(id).onsuccess = e => res(e.target.result));
-            
-            if (task) {
-                task.status = newStatus;
-                await store.put(task);
-                loadTasks();
-            }
-        }
-
-        async function deleteTask(id) {
-            if (confirm('確定要刪除這項任務記錄嗎？')) {
-                const tx = db.transaction('tasks', 'readwrite');
-                const store = tx.objectStore('tasks');
-                await store.delete(id);
-                loadTasks();
-            }
-        }
-
-        // --- 9. 統計數據更新 ---
-        function updateStats(tasks) {
-            const now = Date.now();
-            const FOUR_DAYS_MS = 4 * 24 * 60 * 60 * 1000;
-
-            let pending = 0;
-            let progress = 0;
-            let danger = 0;
-
-            tasks.forEach(t => {
-                if (t.status === '待處理') pending++;
-                if (t.status === '處理中') progress++;
-                
-                const ageMs = now - t.createdAt;
-                if (t.status !== '已完成' && ageMs >= FOUR_DAYS_MS) {
-                    danger++;
-                }
-            });
-
-            document.getElementById('stat-total').textContent = tasks.length;
-            document.getElementById('stat-pending').textContent = pending;
-            document.getElementById('stat-progress').textContent = progress;
-            document.getElementById('stat-danger').textContent = danger;
-        }
-
-        // --- 10. 輔助函式 ---
-        function filterTasks(filter, btn) {
-            currentFilter = filter;
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            loadTasks();
-        }
-
-        document.querySelectorAll('.filter-bar .filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                filterTasks(btn.dataset.filter, btn);
-            });
-        });
-
-        function openImageModal(url) {
-            document.getElementById('modal-img').src = url;
-            document.getElementById('image-modal').style.display = 'flex';
-        }
-
-        function escapeHtml(text) {
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
-        // 初始化載入
-        initDB().then(() => {
-            loadTasks();
-        });
-    </script>
+initDB().then(async()=>{await procRec();await loadTasks();autoBk();updBk()});
+</script>
 </body>
 </html>
